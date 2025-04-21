@@ -1,4 +1,6 @@
 import os
+
+import numpy as np
 import torch
 from PIL import Image
 import random
@@ -41,52 +43,64 @@ class FloodDataset(Dataset):
         self.image_folder = os.path.join(base_folder, 'train_images')
         self.mask_folder = os.path.join(base_folder, 'train_masks')
 
-        self.images = [f for f in os.listdir(self.image_folder) if f.endswith('.jpg')]
-
-        # Sprawdzanie czy istnieje folder do cache i jego tworzenie
         if not os.path.exists(self.cache_dir):
             os.makedirs(self.cache_dir)
 
-    def __len__(self):
-        return len(self.images)
+        self.images = [f for f in os.listdir(self.image_folder) if f.endswith('.jpg')]
+        self.cache_files = []
 
-    def _get_cache_path(self, img_name):
-        return os.path.join(self.cache_dir, img_name.replace('.jpg', '.pt'))
+
+        for img_name in self.images:
+            base_name = img_name.replace('.jpg', '')
+
+            # Ścieżki
+            original_cache = os.path.join(self.cache_dir, f'{base_name}_orig.pt')
+            augment_cache = os.path.join(self.cache_dir, f'{base_name}_aug.pt')
+
+            # Wczytaj tylko jeśli jeszcze nie ma plików w cache
+            if not os.path.exists(original_cache) or not os.path.exists(augment_cache):
+                img_path = os.path.join(self.image_folder, img_name)
+                mask_path = os.path.join(self.mask_folder, base_name + '.png')
+
+                image = Image.open(img_path).convert('RGB')
+                mask = Image.open(mask_path).convert('L')
+                mask = mask.point(lambda p: 255 if p > 128 else 0)
+                print(np.unique(np.array(mask)))
+
+                # Resize bez augmentacji
+                img_resized = resize_and_pad(image, self.target_size, fill=(0, 0, 0), resize_mode=Image.BICUBIC)
+                mask_resized = resize_and_pad(mask, self.target_size, fill=0, resize_mode=Image.NEAREST)
+
+                torch.save({
+                    'image': transforms.ToTensor()(img_resized),
+                    'mask': transforms.ToTensor()(mask_resized)
+                }, original_cache)
+
+                # Z augmentacją (geometria + jittery)
+                aug_img = img_resized
+                aug_mask = mask_resized
+
+                if random.random() < 0.5:
+                    aug_img = transforms.functional.hflip(aug_img)
+                    aug_mask = transforms.functional.hflip(aug_mask)
+                if random.random() < 0.15:
+                    aug_img = transforms.functional.vflip(aug_img)
+                    aug_mask = transforms.functional.vflip(aug_mask)
+
+                aug_img = image_transforms(aug_img)
+                aug_mask = mask_transforms(aug_mask)
+
+                torch.save({'image': aug_img, 'mask': aug_mask}, augment_cache)
+
+            self.cache_files.extend([original_cache, augment_cache])
+
+
+    def __len__(self):
+        return len(self.cache_files)
 
     def __getitem__(self, idx):
-        img_name = self.images[idx]
-        cache_path = self._get_cache_path(img_name)
-
-        # Sprawdzamy, czy plik już istnieje w cache
-        if os.path.exists(cache_path):
-            # Jeśli istnieje, wczytujemy go z cache
-            data = torch.load(cache_path)
-            image, mask = data['image'], data['mask']
-        else:
-            # W przeciwnym razie przetwarzamy obraz i zapisujemy do cache
-            img_path = os.path.join(self.image_folder, img_name)
-            mask_path = os.path.join(self.mask_folder, img_name.replace('.jpg', '.png'))
-
-            image = Image.open(img_path).convert('RGB')
-            mask = Image.open(mask_path).convert('L')
-
-            # Resize z różnymi metodami dla obrazu i maski
-            image = resize_and_pad(image, self.target_size, fill=(0, 0, 0), resize_mode=Image.BICUBIC)
-            mask = resize_and_pad(mask, self.target_size, fill=0, resize_mode=Image.NEAREST)  # NEAREST dla maski
-
-            # Zastosuj te same transformacje geometryczne
-            if random.random() < 0.5:
-                image = transforms.functional.hflip(image)
-                mask = transforms.functional.hflip(mask)
-            if random.random() < 0.15:
-                image = transforms.functional.vflip(image)
-                mask = transforms.functional.vflip(mask)
-
-            # Pozostałe transformacje
-            image = image_transforms(image)
-            mask = mask_transforms(mask)
-
-            # Zapisz dane do cache
-            torch.save({'image': image, 'mask': mask}, cache_path)
-
-        return image, mask
+        data = torch.load(self.cache_files[idx])
+        if idx == 0:  # tylko raz
+            print("Image:", data['image'].dtype, data['image'].shape, data['image'].min().item(), data['image'].max().item())
+            print("Mask:", data['mask'].dtype, data['mask'].shape, torch.unique(data['mask']))
+        return data['image'], data['mask']

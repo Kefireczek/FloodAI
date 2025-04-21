@@ -49,7 +49,7 @@ def visualize_sample(model, loader):
 
 if __name__ == '__main__':
     dataset = FloodDataset(base_folder='train_data', transform=None)
-    loader = DataLoader(dataset, batch_size=8, shuffle=True, num_workers=4)
+    loader = DataLoader(dataset, batch_size=8, shuffle=False, num_workers=4)
 
     model = FloodUNet().to(device)
     print("===> Architektura modelu U-Net:")
@@ -57,9 +57,11 @@ if __name__ == '__main__':
     criterion = nn.BCEWithLogitsLoss()
     optimizer = optim.Adam(model.parameters(), lr=1e-3)
 
-    # Przykład treningu przez 1 epokę (dla testu)
-    loss = train_one_epoch(model, loader, criterion, optimizer)
-    print(f"Loss: {loss:.4f}")
+    num_epochs = 5 # Zmieniasz tutaj liczbę epok
+
+    for epoch in range(num_epochs):
+        loss = train_one_epoch(model, loader, criterion, optimizer)
+        print(f"Epoch {epoch + 1}/{num_epochs} - Loss: {loss:.4f}")
 
     # Wizualizacja predykcji
     visualize_sample(model, loader)
