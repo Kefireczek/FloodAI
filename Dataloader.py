@@ -35,11 +35,6 @@ def show_images_and_masks(data_loader, num_images=3):
         mask_plot = axs[i, 1].imshow(masks[i], cmap='gray', vmin=0, vmax=1)
         axs[i, 1].set_title(f'Maska {i+1}', pad=5)
 
-        # Dodanie paska kolorów tylko dla masek
-        if i == num_images-1:  # tylko dla ostatniego wiersza
-            cbar = fig.colorbar(mask_plot, ax=axs[i, 1], shrink=0.8)
-            cbar.set_ticks([0, 1])
-            cbar.set_ticklabels(['Tło', 'Powódź'])
 
     plt.tight_layout()
     plt.show()
