@@ -28,31 +28,34 @@ class FloodUNet(nn.Module):
         self.pool2 = nn.MaxPool2d(2)
 
         self.enc3 = nn.Sequential(
-            nn.Conv2d(base_filters*2, base_filters*4, 3, padding=1),
-            nn.BatchNorm2d(base_filters*4),
+            nn.Conv2d(base_filters * 2, base_filters * 4, 3, padding=1),
+            nn.BatchNorm2d(base_filters * 4),
             nn.ReLU(inplace=True),
             nn.Conv2d(base_filters * 4, base_filters * 4, 3, padding=1),
             nn.BatchNorm2d(base_filters * 4),
-            nn.ReLU(inplace=True)
+            nn.ReLU(inplace=True),
+            nn.Dropout2d(0.3)  # <- tutaj
         )
         self.pool3 = nn.MaxPool2d(2)
 
         self.bottleneck = nn.Sequential(
-            nn.Conv2d(base_filters*4, base_filters*8, 3, padding=1),
-            nn.BatchNorm2d(base_filters*8),
+            nn.Conv2d(base_filters * 4, base_filters * 8, 3, padding=1),
+            nn.BatchNorm2d(base_filters * 8),
             nn.ReLU(inplace=True),
             nn.Conv2d(base_filters * 8, base_filters * 8, 3, padding=1),
             nn.BatchNorm2d(base_filters * 8),
-            nn.ReLU(inplace=True)
+            nn.ReLU(inplace=True),
+            nn.Dropout2d(0.3)  # <- i tutaj
         )
 
         self.dec3 = nn.Sequential(
-            nn.Conv2d(base_filters*8 + base_filters*4, base_filters*4, 3, padding=1),
-            nn.BatchNorm2d(base_filters*4),
+            nn.Conv2d(base_filters * 8 + base_filters * 4, base_filters * 4, 3, padding=1),
+            nn.BatchNorm2d(base_filters * 4),
             nn.ReLU(inplace=True),
             nn.Conv2d(base_filters * 4, base_filters * 4, 3, padding=1),
             nn.BatchNorm2d(base_filters * 4),
-            nn.ReLU(inplace=True)
+            nn.ReLU(inplace=True),
+            nn.Dropout2d(0.3)  # <- opcjonalnie
         )
 
         self.dec2 = nn.Sequential(

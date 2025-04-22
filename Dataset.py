@@ -65,7 +65,6 @@ class FloodDataset(Dataset):
                 image = Image.open(img_path).convert('RGB')
                 mask = Image.open(mask_path).convert('L')
                 mask = mask.point(lambda p: 255 if p > 128 else 0)
-                print(np.unique(np.array(mask)))
 
                 # Resize bez augmentacji
                 img_resized = resize_and_pad(image, self.target_size, fill=(0, 0, 0), resize_mode=Image.BICUBIC)

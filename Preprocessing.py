@@ -75,8 +75,20 @@ def analyze_and_plot(resolutions, aspect_ratios):
     print(f"Największe zdjęcie: {max_res[0]}x{max_res[1]}")
 
 
+def compute_positive_pixel_ratio(loader):
+    total_pixels = 0
+    total_positive = 0
+
+    for _, masks in loader:
+        masks = masks.view(-1)  # spłaszczamy wszystko
+        total_pixels += masks.numel()
+        total_positive += masks.sum().item()  # liczba "1" w maskach
+
+    ratio = total_positive / total_pixels
+    return ratio
+
 # Główna funkcja
 if __name__ == "__main__":
     folder_path = "train_data/train_images"
-    resolutions, aspect_ratios = extract_image_data(folder_path)
-    analyze_and_plot(resolutions, aspect_ratios)
+    # resolutions, aspect_ratios = extract_image_data(folder_path)
+    # analyze_and_plot(resolutions, aspect_ratios)

@@ -8,7 +8,39 @@ import matplotlib.pyplot as plt
 import numpy as np
 from torchinfo import summary
 
+print(torch.cuda.is_available())  # powinno być True
+print(torch.cuda.get_device_name(0))  # powinna być twoja karta
+
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
+
+def compute_positive_pixel_ratio(loader):
+    total_pixels = 0
+    total_positive = 0
+
+    for _, masks in loader:
+        masks = masks.view(-1)  # spłaszczamy wszystko
+        total_pixels += masks.numel()
+        total_positive += masks.sum().item()  # liczba "1" w maskach
+
+    ratio = total_positive / total_pixels
+    return ratio
+
+
+def dice_loss(pred, target, smooth=1e-6):
+    pred = torch.sigmoid(pred)  # bo model zwraca logits
+    pred = pred.view(-1)
+    target = target.view(-1)
+
+    intersection = (pred * target).sum()
+    dice = (2. * intersection + smooth) / (pred.sum() + target.sum() + smooth)
+    return 1 - dice
+
+
+def combined_loss(pred, target, bce_weight=0.5):
+    bce = nn.BCEWithLogitsLoss()(pred, target)
+    dice = dice_loss(pred, target)
+    return bce_weight * bce + (1 - bce_weight) * dice
 
 def train_one_epoch(model, loader, criterion, optimizer):
     model.train()
@@ -18,7 +50,7 @@ def train_one_epoch(model, loader, criterion, optimizer):
         masks = masks.to(device).float()  # maski binarne: 0 lub 1
 
         outputs = model(images)
-        loss = criterion(outputs, masks)
+        loss = combined_loss(outputs, masks)
 
         optimizer.zero_grad()
         loss.backward()
@@ -49,7 +81,10 @@ def visualize_sample(model, loader):
 
 if __name__ == '__main__':
     dataset = FloodDataset(base_folder='train_data', transform=None)
-    loader = DataLoader(dataset, batch_size=8, shuffle=False, num_workers=4)
+    loader = DataLoader(dataset, batch_size=8, shuffle=True, num_workers=4)
+
+    ratio=compute_positive_pixel_ratio(loader)
+    print("ratio = ",ratio)
 
     model = FloodUNet().to(device)
     print("===> Architektura modelu U-Net:")
