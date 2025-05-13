@@ -89,6 +89,6 @@ def compute_positive_pixel_ratio(loader):
 
 # Główna funkcja
 if __name__ == "__main__":
-    folder_path = "train_data/train_images"
+    folder_path = "train_data/images"
     # resolutions, aspect_ratios = extract_image_data(folder_path)
     # analyze_and_plot(resolutions, aspect_ratios)

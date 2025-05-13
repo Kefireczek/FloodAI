@@ -38,26 +38,3 @@ def show_images_and_masks(data_loader, num_images=3):
 
     plt.tight_layout()
     plt.show()
-
-
-if __name__ == '__main__':
-    # Tworzenie instancji datasetu
-    train_dataset = FloodDataset(base_folder='train_data', transform=None)
-
-    # Tworzenie DataLoadera
-    train_loader = DataLoader(
-        train_dataset,
-        batch_size=batch_size,
-        shuffle=True,  # Losowe permutowanie danych
-        num_workers=num_workers
-    )
-
-    # Testowanie DataLoadera (sprawdzamy rozmiar pierwszej partii)
-    for i, (images, masks) in enumerate(train_loader):
-        print(f'Batch {i + 1}:')
-        print(f'  Obrazy: {images.size()}')
-        print(f'  Maski: {masks.size()}')
-        break  # Wyświetlamy tylko pierwszy batch
-
-    # Wywołanie funkcji do wyświetlenia obrazów i masek
-    show_images_and_masks(train_loader, num_images=3)

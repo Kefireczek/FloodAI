@@ -7,7 +7,10 @@ import random
 import torchvision.transforms as transforms
 from torch.utils.data import Dataset
 
-TARGET_SIZE = (700, 400)  # Szerokość x Wysokość
+TARGET_WIDTH=350
+TARGET_HEIGHT=200
+
+TARGET_SIZE = (TARGET_HEIGHT, TARGET_HEIGHT)  # Szerokość x Wysokość
 
 def resize_and_pad(image, target_size=TARGET_SIZE, fill=0, resize_mode=Image.BICUBIC):
     """Resize obrazu z zachowaniem proporcji i paddingiem."""
@@ -40,8 +43,8 @@ class FloodDataset(Dataset):
         self.target_size = target_size
         self.cache_dir = cache_dir
 
-        self.image_folder = os.path.join(base_folder, 'train_images')
-        self.mask_folder = os.path.join(base_folder, 'train_masks')
+        self.image_folder = os.path.join(base_folder, 'images')
+        self.mask_folder = os.path.join(base_folder, 'masks')
 
         if not os.path.exists(self.cache_dir):
             os.makedirs(self.cache_dir)
@@ -99,7 +102,4 @@ class FloodDataset(Dataset):
 
     def __getitem__(self, idx):
         data = torch.load(self.cache_files[idx])
-        if idx == 0:  # tylko raz
-            print("Image:", data['image'].dtype, data['image'].shape, data['image'].min().item(), data['image'].max().item())
-            print("Mask:", data['mask'].dtype, data['mask'].shape, torch.unique(data['mask']))
         return data['image'], data['mask']
