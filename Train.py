@@ -157,3 +157,7 @@ if __name__ == '__main__':
     visualize_sample(model, val_loader) # predykcja ze zbioru walidacyjnego
     plot_losses(train_losses, val_losses,num_epochs)
     plot_metrics(dice_scores, iou_scores, hausdorff_scores, num_epochs)
+
+    # Zapis modelu
+    torch.save(model.state_dict(), 'flood_unet.pth')
+    print("Model zapisany jako flood_unet.pth")
